@@ -43,7 +43,9 @@ def combine_data_bloks(las_path):
         position = search_first_data_block_string(prefix_datablock_list[prefix], strings_in_file)
         data_block = single_block(position, strings_in_file)
         data_blocks.append(data_block)
+    print('exists')
     return data_blocks
+    
 
 
 
