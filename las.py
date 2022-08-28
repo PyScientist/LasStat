@@ -1,7 +1,7 @@
 def read_file(las_path):
     """Read file to following decomposition
     return list of strings"""
-    file_to_procces = open(las_path, 'rb')
+    file_to_procces = open(las_path, 'r')
     strings_in_file = file_to_procces.readlines()
     file_to_procces.close()
     return strings_in_file
@@ -11,11 +11,9 @@ def search_first_data_block_string(prefix, strings_in_file):
     """Search the first string of data block with given prefix"""
     position = 'Novalue'
     for x in range(len(strings_in_file)):
-        print(prefix)
-        print(strings_in_file[x])
-        if strings_in_file[x].count(prefix) == 0:            
+        if str(strings_in_file[x]).startswith(prefix) == 1:
+            print(strings_in_file[x].startswith(prefix))
             position = x
-            print(position)
             break
     return position
 
@@ -47,11 +45,6 @@ def combine_data_bloks(las_path):
     return data_blocks
     
 
-
-
-    
-        
-                
 if __name__ == '__main__':
      las_path = './las_test/115_БКЗ.las'
      content = combine_data_bloks(las_path)
