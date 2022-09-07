@@ -1,6 +1,47 @@
 import sys
 import time
 
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
+
+
+class MyMplCanavas(FigureCanvasQTAgg):
+    '''
+    Класс холста Qt для помещения рисунка Matplotlib!
+    '''
+    def __init__(self, fig):
+        super().__init__(fig)
+        self.setMinimumSize(200,200)
+
+
+def prepare_abstract_canvas_and_toolbar(layout = None):
+    """
+    Функция для инициализации рисунка Matplotlib и его размещения в виджете Qt, добавления панели навигаии
+    """
+    # Подготовка рисунка и осей
+    fig, axes = plot_single_empty_graph()
+    # Получение экземпляра класса холста с размещенным рисунком
+    canvas = MyMplCanavas(fig)
+    # Добавление виджета холста с рисунком в размещение
+    layout.addWidget(canvas)
+    # Добавление навигационной панели с привязкой к созданному холсту с рисунком Matplotlib
+    toolbar = NavigationToolbar2QT(canvas, layout.parent())
+    layout.addWidget(toolbar)
+    return canvas, toolbar
+
+def plot_single_empty_graph():
+    '''
+    Функция для подготовки рисунка с пустыми осями и предварительного их оформления, без задания данных
+    '''
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 7), dpi=85, facecolor='white', frameon=True, edgecolor='black', linewidth=1)
+    fig.subplots_adjust(wspace=0.4, hspace=0.6, left=0.15, right=0.85, top=0.9, bottom=0.1)
+    axes.grid(True, c='lightgrey', alpha=0.5)
+    axes.set_title('Заголовок диаграммы рассеяния', fontsize=10)
+    axes.set_xlabel('X', fontsize=8)
+    axes.set_ylabel('Y', fontsize=8)
+    return fig, axes
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QTableWidget, QTableView
 from PyQt5.QtWidgets import QDialog, QLineEdit, QComboBox, QLabel, QSpinBox
@@ -125,6 +166,12 @@ class MainWindow(QMainWindow):
         self.CentrLayout.addWidget(self.lButtonsPanel.buttons_widget)
         
         self.lButtonsPanel.add_button(plot_curve, 'plot chosen')
+
+        # Preparation foundation for matplotlib widget
+        self.mplWidget = QWidget()
+        self.companovka_for_mpl = QVBoxLayout(self.mplWidget)
+        self.CentrLayout.addWidget(self.mplWidget)
+        canvas, toolbar = prepare_abstract_canvas_and_toolbar(layout=self.companovka_for_mpl)
         
         las_path = './las_test/115_БКЗ.las'
         self.current_set = CurveSet(las_path)
