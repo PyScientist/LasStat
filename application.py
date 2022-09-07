@@ -130,6 +130,7 @@ class MainWindow(QMainWindow):
         self.current_set = CurveSet(las_path)
         
         self.expl_field.add_text(str(self.current_set.curves_list))
+        self.lButtonsPanel.add_combobox(self.current_set.curves_list, 'methods combo')
         
         
 
