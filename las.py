@@ -1,18 +1,40 @@
 import numpy as np
 from datetime import datetime
 
+class PropertiesDict:
+    props_dict = {}
+    def __init__(self):
+          self.load_props()
+    
+    def load_props(self):
+          props = []
+          props.append(['GR', 'red', 'GAPI', '0', '120', 'linear', 'gamma ray'])
+          props.append(['GZ5', 'blue', 'Ohmm', '0.01', '1000', 'log', 'laterlog array deep'])
+          props.append(['GZ1', 'orange', 'Ohmm', '0.01', '1000', 'log', 'laterlog array micro'])
+          props.append(['missing', 'pink', 'missing', 'missing', 'missing', 'missing', 'missing'])
+          prop_names = ['name', 'color', 'units', 'min', 'max', 'scale', 'description']
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+          for item in props:
+                 props_dict_single = {}
+                 for i, prop_name in enumerate(prop_names):
+                       props_dict_single[prop_name] = item[i]
+                 self.props_dict[item[0]] = props_dict_single
+                 
+               
 class CurveSet:
     strings_in_file = []
-    data_blocks_dict = {}
-    param_dict = {}
-    curves_list = []
-    units_list = []
-    description_list = []
-    curves_data  = np.array([])
-    logger = []
-    
-    def __init__(self, las_path):
-          self.las_path  = las_path
+    data_blocks_dict = {}        
+       
+    def __init__(self, las_path, properties_dict):
+          self.param_dict = {}
+          self.curves_list = []
+          self.units_list = [] 
+          self.description_list = []          
+          self.curves_data = np.array([])
+          self.logger = []
+          self.curve_props_list = []
+          self.las_path = las_path
+          self.properties_dict = properties_dict
           self.read_file()
           self.combine_data_blocks()
           self.version_search()
@@ -20,9 +42,18 @@ class CurveSet:
           self.get_curve_spec_list()
           self.got_data()
           self.fix_noval()
+          self.form_props_list()
           #self.printstat()
-          
+                            
+    def  form_props_list(self):          
+          for curve in self.curves_list:
+                try:
+                     self.curve_props_list.append(self.properties_dict.props_dict[curve])
+                except:
+                     self.curve_props_list.append(self.properties_dict.props_dict['missing'])
+                    
     def read_file(self):
+           strings_in_file = []
            """Read file to following decomposition
            return list of strings"""
            file_to_procces = open(self.las_path, 'r')
@@ -52,12 +83,13 @@ class CurveSet:
             return data_block
             
     def combine_data_blocks(self):
+           self.data_blocks_dict = {}  # clean dict with data blocks from previous
            """Prepare the set of datablocks by given prefixes"""
-           prefix_datablock_list=['~V', '~W', '~C', '~P', '~O', '~A', '~B']          
+           prefix_datablock_list=['~V', '~W', '~C', '~P', '~O', '~A', '~B'] 
            for prefix in prefix_datablock_list:
                  self.data_blocks_dict[prefix] = []
-           for key in self.data_blocks_dict:                 
-                 position = self.search_first_data_block_string(key)               
+           for key in self.data_blocks_dict:
+                 position = self.search_first_data_block_string(key)
                  self.data_blocks_dict[key]=self.single_block(position)
     
     def printstat(self):
@@ -117,7 +149,7 @@ class CurveSet:
                     self.param_dict['date'] = self.got_las_data(line, self.param_dict['version'])                                                                                                 
 
     def get_curve_spec_list(self):
-           """Get logging list"""
+           """Get logging list"""           
            for line in self.data_blocks_dict['~C']:
                  self.curves_list.append(line[0:line.find(".")].strip())
                  self.description_list.append(line[line.find(":")+1:len(line)].strip())
@@ -139,15 +171,16 @@ class CurveSet:
                self.logger.append('good quality')
  
 def perfomance_test(las_path):
-      for i in range(10):
+      
+      properties_dict = PropertiesDict()
+      
+      for i in range(20):
         start = datetime.now()
-        for x in range(80):
-              set1 = CurveSet(las_path)
+        for x in range(8):
+              set1 = CurveSet(las_path, properties_dict)                         
         print(datetime.now()-start)
-
      
 if __name__ == '__main__':
      las_path = './las_test/115_БКЗ.las'
      perfomance_test(las_path)
-     #set1 = CurveSet(las_path)
      

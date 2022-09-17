@@ -20,26 +20,28 @@ def prepare_abstract_canvas_and_toolbar(layout = None):
     Функция для инициализации рисунка Matplotlib и его размещения в виджете Qt, добавления панели навигаии
     """
     # Подготовка рисунка и осей
-    fig, axes = plot_single_empty_graph()
+    elem_dict = {}
+    elem_dict['fig'], elem_dict['ax'] = plot_single_empty_graph()
     # Получение экземпляра класса холста с размещенным рисунком
-    canvas = MyMplCanavas(fig)
+    elem_dict['can'] = MyMplCanavas(elem_dict['fig'])
     # Добавление виджета холста с рисунком в размещение
-    layout.addWidget(canvas)
+    layout.addWidget(elem_dict['can'])
     # Добавление навигационной панели с привязкой к созданному холсту с рисунком Matplotlib
-    toolbar = NavigationToolbar2QT(canvas, layout.parent())
+    toolbar = NavigationToolbar2QT(elem_dict['can'], layout.parent())
     layout.addWidget(toolbar)
-    return canvas, toolbar
+   
+    return elem_dict
 
 def plot_single_empty_graph():
-    '''
+    """
     Функция для подготовки рисунка с пустыми осями и предварительного их оформления, без задания данных
-    '''
-    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 7), dpi=85, facecolor='white', frameon=True, edgecolor='black', linewidth=1)
+    """
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 30), dpi=85, facecolor='white', frameon=True, edgecolor='black', linewidth=1)
     fig.subplots_adjust(wspace=0.4, hspace=0.6, left=0.15, right=0.85, top=0.9, bottom=0.1)
     axes.grid(True, c='lightgrey', alpha=0.5)
-    axes.set_title('Заголовок диаграммы рассеяния', fontsize=10)
-    axes.set_xlabel('X', fontsize=8)
-    axes.set_ylabel('Y', fontsize=8)
+    axes.set_title('Title', fontsize=10)
+    axes.set_xlabel('X', fontsize=20)
+    axes.set_ylabel('Y', fontsize=20)
     return fig, axes
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit
@@ -50,7 +52,7 @@ from PyQt5.QtWidgets import QDialog, QLineEdit, QComboBox, QLabel, QSpinBox
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
-from las import CurveSet
+from las import CurveSet, PropertiesDict
 
 from matplotlib import pyplot as plt
 
@@ -100,6 +102,7 @@ class LSpin:
         self.spinbox.setValue(default_value)
         self.spinbox.setObjectName(name)
 
+
 class MethodCombobox:
     def __init__(self, values, name):
         self.combobox_methods = QComboBox()
@@ -126,28 +129,57 @@ class LowerButtonsPanel:
         """Add button to panel with action and text"""
         self.container.addWidget(LButton(action=action, text=text).button)
 
+    def read_combobox_methods(self, name):
+        """Got current text from methods combobox"""
+        combobox = self.buttons_widget.findChild(QComboBox, name)
+        return combobox.currentText()
 
+class  CurveObject:
+            def __init__(self, mainwindow):
+                # Recive axes and figure objects
+                self.axes, self.fig = mainwindow.MplCanavas['ax'], mainwindow.MplCanavas['fig']
+                # Read mnemonic of curve to plot from combobox
+                self.mnem = mainwindow.lButtonsPanel.read_combobox_methods('methods combo')
+                x_index, y_index= None, None
+                for i, curve in enumerate(mainwindow.current_set.curves_list):
+                   if curve == self.mnem:
+                       x_index = i
+                   if curve == 'DEPT':
+                       y_index = i
+                # Obtain data and units of curve by indexes
+                self.x_arr = mainwindow.current_set.curves_data[x_index]
+                self.x_unit = mainwindow.current_set.units_list[x_index]
+                self.x_color = mainwindow.current_set.curve_props_list[x_index]['color']
+                self.y_arr = mainwindow.current_set.curves_data[y_index]
+                self.y_unit = mainwindow.current_set.units_list[y_index]
+                self.plot_data()  #plotting data
+                                
+            def  plot_data(self):
+                """Prepare plot and make some adjustment"""
+                self.axes.plot(self.x_arr, self.y_arr*(-1), color=self.x_color)
+                self.axes.set_title('Plot cuves from las', fontsize=20)
+                self.axes.set_xlabel(F'{self.mnem}, {self.x_unit} ', fontsize=20)
+                self.axes.set_ylabel(F'Depth, {self.y_unit}', fontsize=20)
+                # Redraw matplotlib canvas
+                self.fig.canvas.draw()
+            
+            
 class MainWindow(QMainWindow):
-    
-    current_set = None
-        
+          
     def __init__(self):
         super().__init__()
+        self.current_set = None
+        self.curvesObj = None
         
         def plot_curve():
-               x_index = None
-               y_index = None
-               for i in range(len(self.current_set.curves_list)):
-                   if self.current_set.curves_list[i] == 'GZ5':
-                       x_index = i
-                   if self.current_set.curves_list[i] == 'DEPT':
-                       y_index = i
-                                     
-               fig, ax = plt.subplots(1,1)
-               x = self.current_set.curves_data[x_index]
-               y = self.current_set.curves_data[y_index]
-               ax.plot(x, y)
-               plt.show()
+               """Plot selected curve"""
+               self.curvesObj = CurveObject(self)
+               
+        def clear_ax():
+                 """Clear axes from all information"""
+                 self.MplCanavas['ax'].clear()
+                 self.MplCanavas['fig'].canvas.draw()
+               
                
         # Create widget and vertical layout.
         # Set layout to widget
@@ -164,23 +196,24 @@ class MainWindow(QMainWindow):
         # Create lower buttons panel (initially empty) and add it to central widget layout
         self.lButtonsPanel = LowerButtonsPanel(self)
         self.CentrLayout.addWidget(self.lButtonsPanel.buttons_widget)
-        
+        # Add button to plot single curve to the graph
         self.lButtonsPanel.add_button(plot_curve, 'plot chosen')
-
+        self.lButtonsPanel.add_button(clear_ax, 'clear')
         # Preparation foundation for matplotlib widget
         self.mplWidget = QWidget()
-        self.companovka_for_mpl = QVBoxLayout(self.mplWidget)
+        self.comp_for_mpl = QVBoxLayout(self.mplWidget)
         self.CentrLayout.addWidget(self.mplWidget)
-        canvas, toolbar = prepare_abstract_canvas_and_toolbar(layout=self.companovka_for_mpl)
-        
+        # Insert matplotlib drawing canvas to matplotlib layuot
+        self.MplCanavas = prepare_abstract_canvas_and_toolbar(layout=self.comp_for_mpl)
+                
         las_path = './las_test/115_БКЗ.las'
-        self.current_set = CurveSet(las_path)
+        properties_dict = PropertiesDict()
+        self.current_set = CurveSet(las_path, properties_dict)
         
-        self.expl_field.add_text(str(self.current_set.curves_list))
+        self.expl_field.add_text('ready')
         self.lButtonsPanel.add_combobox(self.current_set.curves_list, 'methods combo')
         
         
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     main = MainWindow()
