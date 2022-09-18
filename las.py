@@ -1,24 +1,24 @@
 import numpy as np
 from datetime import datetime
+from DBsupervision import PropertiesBase
 
 class PropertiesDict:
     props_dict = {}
     def __init__(self):
+          self.props_database = PropertiesBase()
           self.load_props()
     
     def load_props(self):
-          props = []
-          props.append(['GR', 'red', 'GAPI', '0', '120', 'linear', 'gamma ray'])
-          props.append(['GZ5', 'blue', 'Ohmm', '0.01', '1000', 'log', 'laterlog array deep'])
-          props.append(['GZ1', 'orange', 'Ohmm', '0.01', '1000', 'log', 'laterlog array micro'])
-          props.append(['missing', 'pink', 'missing', 'missing', 'missing', 'missing', 'missing'])
-          prop_names = ['name', 'color', 'units', 'min', 'max', 'scale', 'description']
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+          props = self.props_database.get_data_from_table(self.props_database.property_table)
+          prop_names = ('id', 'curve_name', 'color', 'units', 'min', 'max', 'scale', 'description', 'type')
+          # Prepare properties dict using external database
           for item in props:
                  props_dict_single = {}
                  for i, prop_name in enumerate(prop_names):
                        props_dict_single[prop_name] = item[i]
-                 self.props_dict[item[0]] = props_dict_single
+                 self.props_dict[item[1]] = props_dict_single
+          for key in self.props_dict:
+              print(self.props_dict[key])
                  
                
 class CurveSet:

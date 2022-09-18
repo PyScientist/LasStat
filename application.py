@@ -160,6 +160,14 @@ class  CurveObject:
                 self.axes.set_title('Plot cuves from las', fontsize=20)
                 self.axes.set_xlabel(F'{self.mnem}, {self.x_unit} ', fontsize=20)
                 self.axes.set_ylabel(F'Depth, {self.y_unit}', fontsize=20)
+                self.axes.tick_params(axis='x', labelcolor=self.x_color)
+                ax2 = self.axes.twiny()
+                ax2.plot(self.x_arr, self.y_arr * (-1), color='pink')
+                ax2.tick_params(axis='x', labelcolor='pink', pad=40)
+                ax3 = self.axes.twiny()
+                ax3.plot(self.x_arr, self.y_arr * (-1), color='green')
+                ax3.tick_params(axis='x', labelcolor='green', pad=0)
+
                 # Redraw matplotlib canvas
                 self.fig.canvas.draw()
             
